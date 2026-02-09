@@ -11,10 +11,13 @@ export default function Inquiries() {
     end_date: ''
   })
   const [selectedInquiry, setSelectedInquiry] = useState(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 5
   const token = useSelector(s => s.auth.token)
 
   useEffect(() => {
     loadInquiries()
+    setCurrentPage(1)
   }, [filters])
 
   const loadInquiries = async () => {
@@ -132,8 +135,9 @@ export default function Inquiries() {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Lista */}
-          <div className="space-y-3">
-            {inquiries.map(inquiry => (
+          <div>
+            <div className="space-y-3 mb-4">
+              {inquiries.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map(inquiry => (
               <div
                 key={inquiry.id}
                 onClick={() => setSelectedInquiry(inquiry)}
@@ -173,6 +177,44 @@ export default function Inquiries() {
                 </p>
               </div>
             ))}
+            </div>
+            
+            {/* Paginación */}
+            {inquiries.length > itemsPerPage && (
+              <div className="flex justify-center items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
+                >
+                  Anterior
+                </button>
+                
+                <div className="flex gap-2">
+                  {Array.from({ length: Math.ceil(inquiries.length / itemsPerPage) }, (_, i) => i + 1).map(page => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`px-3 py-2 border rounded ${
+                        currentPage === page 
+                          ? 'bg-blue-500 text-white' 
+                          : 'hover:bg-gray-100'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+                
+                <button
+                  onClick={() => setCurrentPage(Math.min(Math.ceil(inquiries.length / itemsPerPage), currentPage + 1))}
+                  disabled={currentPage === Math.ceil(inquiries.length / itemsPerPage)}
+                  className="px-4 py-2 border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
+                >
+                  Siguiente
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Detalle */}

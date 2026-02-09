@@ -4,7 +4,6 @@ import { fetchProperties } from '../store/slices/propertiesSlice'
 import { Link } from 'react-router-dom'
 import api from '../utils/api'
 import { FaRulerCombined, FaHome, FaBed, FaBath, FaCar } from 'react-icons/fa'
-import { FiEdit } from 'react-icons/fi'
 
 export default function Properties(){
   const dispatch = useDispatch()
@@ -24,6 +23,8 @@ export default function Properties(){
   const [filterState, setFilterState] = useState('')
   const [filterCity, setFilterCity] = useState('')
   const [filterNeighborhood, setFilterNeighborhood] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 5
 
   useEffect(()=>{ dispatch(fetchProperties()) }, [dispatch])
 
@@ -168,8 +169,9 @@ export default function Properties(){
         {filteredList.length === 0 ? (
           <div className="text-gray-500">{(list?.length || 0) === 0 ? 'No hay propiedades aun' : 'No hay propiedades que coincidan con los filtros'}</div>
         ) : (
-          <div className="space-y-4">
-            {filteredList.map(p => {
+          <>
+            <div className="space-y-4">
+              {filteredList.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map(p => {
               let img = p.images && p.images.length > 0 ? p.images[0].image_url : (thumbs[p.id] || null)
               if (img && !img.startsWith('http') && !img.startsWith('//')){
                 if (!img.startsWith('/')) img = '/' + img
@@ -227,7 +229,9 @@ export default function Properties(){
                   <div className="p-4 flex-1 flex flex-col">
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-2 max-w-xl">
-                        <h3 className="font-semibold text-lg truncate">{p.title || 'Sin título'}</h3>
+                        <Link to={`/admin/properties/${p.id}`}>
+                          <h3 className="font-semibold text-lg truncate hover:text-blue-600 cursor-pointer transition">{p.title || 'Sin título'}</h3>
+                        </Link>
                         {marketLabel && (
                           <span className="px-2 py-1 rounded text-sm bg-yellow-100 text-yellow-800">{marketLabel}</span>
                         )}
@@ -247,17 +251,52 @@ export default function Properties(){
                       <div className="flex items-center gap-2"><FaCar className="text-gray-500"/><span>{p.garages ?? p.cocheras ?? 0}</span></div>
                     </div>
 
-                    <div className="mt-auto flex justify-between items-center">
-                      <div className="flex gap-2">
-                        <Link to={`/admin/properties/${p.id}`} className="inline-flex items-center gap-2 px-3 py-1 bg-gray-100 rounded hover:bg-gray-200 text-sm"><FiEdit/> Editar</Link>
-                      </div>
+                    <div className="mt-auto flex justify-end items-center">
                       <div className="text-sm text-gray-500">ID: {p.id}</div>
                     </div>
                   </div>
                 </div>
               )
             })}
-          </div>
+            </div>
+            
+            {/* Paginación */}
+            {filteredList.length > itemsPerPage && (
+              <div className="flex justify-center items-center gap-2 mt-6">
+                <button
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
+                >
+                  Anterior
+                </button>
+                
+                <div className="flex gap-2">
+                  {Array.from({ length: Math.ceil(filteredList.length / itemsPerPage) }, (_, i) => i + 1).map(page => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`px-3 py-2 border rounded ${
+                        currentPage === page 
+                          ? 'bg-blue-500 text-white' 
+                          : 'hover:bg-gray-100'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+                
+                <button
+                  onClick={() => setCurrentPage(Math.min(Math.ceil(filteredList.length / itemsPerPage), currentPage + 1))}
+                  disabled={currentPage === Math.ceil(filteredList.length / itemsPerPage)}
+                  className="px-4 py-2 border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
+                >
+                  Siguiente
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
