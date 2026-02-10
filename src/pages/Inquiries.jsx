@@ -1,8 +1,11 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { useSelector } from 'react-redux'
 import api from '../utils/api'
+import { useToast } from '../components/ToastProvider'
+import { APP_CONFIG, ERROR_MESSAGES, SUCCESS_MESSAGES } from '../utils/constants'
 
 export default function Inquiries() {
+  const toast = useToast()
   const [inquiries, setInquiries] = useState([])
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState({
@@ -12,15 +15,10 @@ export default function Inquiries() {
   })
   const [selectedInquiry, setSelectedInquiry] = useState(null)
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 5
+  const itemsPerPage = APP_CONFIG.ITEMS_PER_PAGE
   const token = useSelector(s => s.auth.token)
 
-  useEffect(() => {
-    loadInquiries()
-    setCurrentPage(1)
-  }, [filters])
-
-  const loadInquiries = async () => {
+  const loadInquiries = useCallback(async () => {
     try {
       setLoading(true)
       const params = new URLSearchParams()
@@ -35,23 +33,30 @@ export default function Inquiries() {
       setInquiries(response.data.data.inquiries || [])
     } catch (error) {
       console.error('Error loading inquiries:', error)
+      toast.error(ERROR_MESSAGES.GENERIC)
     } finally {
       setLoading(false)
     }
-  }
+  }, [filters, token, toast])
+
+  useEffect(() => {
+    loadInquiries()
+    setCurrentPage(1)
+  }, [loadInquiries])
 
   const handleDelete = async (id) => {
-    if (!confirm('¿Está seguro de eliminar esta consulta?')) return
+    if (!window.confirm('¿Está seguro de eliminar esta consulta?')) return
     
     try {
       await api.delete(`/inquiries/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
+      toast.success(SUCCESS_MESSAGES.DELETED)
       loadInquiries()
       setSelectedInquiry(null)
     } catch (error) {
       console.error('Error deleting inquiry:', error)
-      alert('Error al eliminar la consulta')
+      toast.error(ERROR_MESSAGES.GENERIC)
     }
   }
 
@@ -71,20 +76,20 @@ export default function Inquiries() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Consultas</h1>
+        <h1 className="text-2xl md:text-3xl font-bold">Consultas</h1>
       </div>
 
       {/* Filtros */}
-      <div className="bg-white p-4 rounded-lg shadow">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="bg-white p-3 md:p-4 rounded-lg shadow">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
           <div>
-            <label className="block text-sm font-medium mb-2">Tipo</label>
+            <label className="block text-xs md:text-sm font-medium mb-2">Tipo</label>
             <select
               value={filters.type}
               onChange={(e) => setFilters({ ...filters, type: e.target.value })}
-              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
             >
               <option value="">Todos</option>
               <option value="property">Consultas sobre Propiedades</option>
@@ -93,22 +98,22 @@ export default function Inquiries() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Desde</label>
+            <label className="block text-xs md:text-sm font-medium mb-2">Desde</label>
             <input
               type="date"
               value={filters.start_date}
               onChange={(e) => setFilters({ ...filters, start_date: e.target.value })}
-              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Hasta</label>
+            <label className="block text-xs md:text-sm font-medium mb-2">Hasta</label>
             <input
               type="date"
               value={filters.end_date}
               onChange={(e) => setFilters({ ...filters, end_date: e.target.value })}
-              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
             />
           </div>
         </div>
@@ -133,7 +138,7 @@ export default function Inquiries() {
           No hay consultas que coincidan con los filtros
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           {/* Lista */}
           <div>
             <div className="space-y-3 mb-4">
@@ -141,19 +146,19 @@ export default function Inquiries() {
               <div
                 key={inquiry.id}
                 onClick={() => setSelectedInquiry(inquiry)}
-                className={`bg-white p-4 rounded-lg shadow cursor-pointer hover:shadow-md transition ${
+                className={`bg-white p-3 md:p-4 rounded-lg shadow cursor-pointer hover:shadow-md transition ${
                   selectedInquiry?.id === inquiry.id ? 'ring-2 ring-blue-500' : ''
                 }`}
               >
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <h3 className="font-bold text-lg">{inquiry.name}</h3>
-                    <p className="text-sm text-gray-600">{inquiry.email}</p>
+                <div className="flex flex-col sm:flex-row justify-between items-start mb-2 gap-2">
+                  <div className="flex-1">
+                    <h3 className="font-bold text-base md:text-lg">{inquiry.name}</h3>
+                    <p className="text-xs md:text-sm text-gray-600">{inquiry.email}</p>
                     {inquiry.phone && (
-                      <p className="text-sm text-gray-600">{inquiry.phone}</p>
+                      <p className="text-xs md:text-sm text-gray-600">{inquiry.phone}</p>
                     )}
                   </div>
-                  <span className={`text-xs px-2 py-1 rounded ${
+                  <span className={`text-xs px-2 py-1 rounded whitespace-nowrap ${
                     inquiry.property_id 
                       ? 'bg-blue-100 text-blue-800' 
                       : 'bg-green-100 text-green-800'
@@ -217,12 +222,12 @@ export default function Inquiries() {
             )}
           </div>
 
-          {/* Detalle */}
-          <div className="lg:sticky lg:top-6 h-fit">
-            {selectedInquiry ? (
-              <div className="bg-white p-6 rounded-lg shadow">
-                <div className="flex justify-between items-start mb-4">
-                  <h2 className="text-2xl font-bold">Detalle de la Consulta</h2>
+          {/* Detalle - Solo se muestra cuando hay una consulta seleccionada en mobile */}
+          {selectedInquiry && (
+            <div className="lg:sticky lg:top-6 h-fit">
+              <div className="bg-white p-4 md:p-6 rounded-lg shadow">
+                <div className="flex flex-col sm:flex-row justify-between items-start mb-4 gap-2">
+                  <h2 className="text-xl md:text-2xl font-bold">Detalle de la Consulta</h2>
                   <button
                     onClick={() => handleDelete(selectedInquiry.id)}
                     className="text-red-600 hover:text-red-800 text-sm"
@@ -233,14 +238,14 @@ export default function Inquiries() {
 
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Tipo</label>
-                    <p className="text-lg">{getInquiryType(selectedInquiry)}</p>
+                    <label className="text-xs md:text-sm font-medium text-gray-600">Tipo</label>
+                    <p className="text-base md:text-lg">{getInquiryType(selectedInquiry)}</p>
                   </div>
 
                   {selectedInquiry.property_title && (
                     <div>
-                      <label className="text-sm font-medium text-gray-600">Propiedad</label>
-                      <p className="text-lg">{selectedInquiry.property_title}</p>
+                      <label className="text-xs md:text-sm font-medium text-gray-600">Propiedad</label>
+                      <p className="text-base md:text-lg">{selectedInquiry.property_title}</p>
                     </div>
                   )}
 
@@ -288,12 +293,8 @@ export default function Inquiries() {
                   </div>
                 </div>
               </div>
-            ) : (
-              <div className="bg-white p-6 rounded-lg shadow text-center text-gray-500">
-                Seleccione una consulta para ver los detalles
-              </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -1,8 +1,7 @@
 import React, {useEffect, useState} from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../utils/api'
-import { toast, ToastContainer } from 'react-toastify'
-import 'react-toastify/dist/ReactToastify.css'
+import { useToast } from '../components/ToastProvider'
 import LocationPicker from '../components/LocationPicker'
 
 // Componente para seleccionar múltiples items (amenities, tags)
@@ -63,6 +62,7 @@ function NumericSelect({label, value, onChange, required, disabled, max = 20}) {
 export default function PropertyEdit(){
   const { id } = useParams()
   const nav = useNavigate()
+  const toast = useToast()
   
   const [property, setProperty] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -281,30 +281,30 @@ export default function PropertyEdit(){
   if(!property) return <div className="p-4">Cargando...</div>
 
   return (
-    <div className="bg-white p-6 rounded shadow max-w-5xl">
-      <h2 className="text-2xl font-semibold mb-4">
+    <div className="bg-white p-4 md:p-6 rounded shadow max-w-5xl">
+      <h2 className="text-xl md:text-2xl font-semibold mb-4">
         {id === 'new' ? 'Nueva Propiedad' : 'Editar Propiedad'}
       </h2>
 
       {/* Datos Básicos */}
-      <fieldset className="border border-gray-300 p-4 mb-4 rounded">
-        <legend className="text-lg font-semibold px-2">Datos Básicos</legend>
-        <div className="grid grid-cols-2 gap-4">
+      <fieldset className="border border-gray-300 p-3 md:p-4 mb-4 rounded">
+        <legend className="text-base md:text-lg font-semibold px-2">Datos Básicos</legend>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block mb-2 font-semibold">Título <span className="text-red-500">*</span></label>
+            <label className="block mb-2 font-semibold text-sm md:text-base">Título <span className="text-red-500">*</span></label>
             <input 
               value={property.title || ''} 
               onChange={e=>setProperty({...property, title:e.target.value})} 
-              className="w-full p-2 border rounded"
+              className="w-full p-2 border rounded text-sm md:text-base"
               placeholder="Ej: Departamento 2 amb en Belgrano"
             />
           </div>
           <div>
-            <label className="block mb-2 font-semibold">Descripción</label>
+            <label className="block mb-2 font-semibold text-sm md:text-base">Descripción</label>
             <textarea 
               value={property.description || ''} 
               onChange={e=>setProperty({...property, description:e.target.value})} 
-              className="w-full p-2 border rounded" 
+              className="w-full p-2 border rounded text-sm md:text-base" 
               rows="3"
             />
           </div>
@@ -312,9 +312,9 @@ export default function PropertyEdit(){
       </fieldset>
 
       {/* Precio y Expensas */}
-      <fieldset className="border border-gray-300 p-4 mb-4 rounded">
-        <legend className="text-lg font-semibold px-2">Precio y Expensas</legend>
-        <div className="grid grid-cols-3 gap-4">
+      <fieldset className="border border-gray-300 p-3 md:p-4 mb-4 rounded">
+        <legend className="text-base md:text-lg font-semibold px-2">Precio y Expensas</legend>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           <div>
             <label className="block mb-2 font-semibold">Precio <span className="text-red-500">*</span></label>
             <input 
@@ -409,16 +409,16 @@ export default function PropertyEdit(){
       </fieldset>
 
       {/* Características Físicas */}
-      <fieldset className="border border-gray-300 p-4 mb-4 rounded">
-        <legend className="text-lg font-semibold px-2">Características Físicas</legend>
-        <div className="grid grid-cols-4 gap-4">
+      <fieldset className="border border-gray-300 p-3 md:p-4 mb-4 rounded">
+        <legend className="text-base md:text-lg font-semibold px-2">Características Físicas</legend>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <NumericSelect max={6} label="Dormitorios" value={property.bedrooms} onChange={v=>setProperty({...property, bedrooms:v})} />
           <NumericSelect max={6} label="Ambientes" value={property.rooms} onChange={v=>setProperty({...property, rooms:v})} />
           <NumericSelect max={6} label="Baños" value={property.bathrooms} onChange={v=>setProperty({...property, bathrooms:v})} />
           <NumericSelect label="Cocheras" value={property.garages} onChange={v=>setProperty({...property, garages:v})} />
         </div>
 
-        <div className="grid grid-cols-4 gap-4 mt-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
           <div>
             <label className="block mb-2 font-semibold">Superficie Total (m²)</label>
             <input 
@@ -465,7 +465,7 @@ export default function PropertyEdit(){
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4 mt-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4">
           <NumericSelect label="Pisos" value={property.total_floors} onChange={v=>setProperty({...property, total_floors:v})} />
           
           <div>
@@ -694,9 +694,6 @@ export default function PropertyEdit(){
           </div>
         </div>
       )}
-
-      {/* Toast Container */}
-      <ToastContainer position="top-right" autoClose={3000} />
     </div>
   )
 }

@@ -3,6 +3,8 @@ import { useDispatch, useSelector } from 'react-redux'
 import { fetchProperties } from '../store/slices/propertiesSlice'
 import { Link } from 'react-router-dom'
 import api from '../utils/api'
+import { getFirstImage } from '../utils/imageHelper'
+import { APP_CONFIG, STATUS_LABELS } from '../utils/constants'
 import { FaRulerCombined, FaHome, FaBed, FaBath, FaCar } from 'react-icons/fa'
 
 export default function Properties(){
@@ -24,7 +26,7 @@ export default function Properties(){
   const [filterCity, setFilterCity] = useState('')
   const [filterNeighborhood, setFilterNeighborhood] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 5
+  const itemsPerPage = APP_CONFIG.ITEMS_PER_PAGE
 
   useEffect(()=>{ dispatch(fetchProperties()) }, [dispatch])
 
@@ -43,18 +45,14 @@ export default function Properties(){
       if((!p.images || p.images.length === 0) && !thumbs[p.id]){
         api.get(`/properties/${p.id}`).then(r=>{
           const prop = r.data.data
-          const img = prop.images && prop.images.length>0 ? prop.images[0].image_url : null
-          if(img){
-            let v = img.replace(/\\/g, '/')
-            if(!v.startsWith('/')) v = '/' + v
-            const base = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-            const abs = (v.startsWith('http')||v.startsWith('//')) ? v : base.replace(/\/$/, '') + v
-            setThumbs(prev => ({...prev, [p.id]: abs}))
+          const imageUrl = getFirstImage(prop.images)
+          if(imageUrl){
+            setThumbs(prev => ({...prev, [p.id]: imageUrl}))
           }
         }).catch(()=>{})
       }
     })
-  }, [list])
+  }, [list, thumbs])
 
   const filteredList = useMemo(() => {
     const resolveMarketLabel = (p) => {
@@ -122,46 +120,45 @@ export default function Properties(){
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">Propiedades</h2>
-        <Link to="/admin/properties/new" className="bg-primary text-white px-3 py-2 rounded">+ Nueva propiedad</Link>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
+        <h2 className="text-lg md:text-xl font-semibold">Propiedades</h2>
+        <Link to="/admin/properties/new" className="bg-primary text-white px-3 py-2 rounded text-sm md:text-base whitespace-nowrap">+ Nueva propiedad</Link>
       </div>
 
       <div className="mb-4 flex flex-col gap-3">
-        <div className="flex gap-2 items-center">
-          <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Buscar por título, dirección o ID" className="flex-1 p-2 border rounded" />
-          <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)} className="p-2 border rounded">
+        <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+          <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Buscar..." className="flex-1 p-2 border rounded text-sm md:text-base" />
+          <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)} className="p-2 border rounded text-sm md:text-base">
             <option value="">Todos estados</option>
             <option value="published">Publicado</option>
             <option value="draft">Borrador</option>
             <option value="paused">En Pausa</option>
           </select>
-          <select value={filterMarket} onChange={e=>setFilterMarket(e.target.value)} className="p-2 border rounded">
-            <option value="">Cualquier estado</option>
+          <select value={filterMarket} onChange={e=>setFilterMarket(e.target.value)} className="p-2 border rounded text-sm md:text-base">
+            <option value="">Estado mercado</option>
             <option value="alquilado">Alquilado</option>
             <option value="vendido">Vendido</option>
             <option value="disponible">Disponible</option>
           </select>
-          <button onClick={()=>{ setQ(''); setFilterStatus(''); setFilterMarket(''); setFilterPropertyType(''); setFilterOperationType(''); setFilterCountry(''); setFilterState(''); setFilterCity(''); setFilterNeighborhood(''); }} className="px-3 py-2 border rounded">Limpiar</button>
         </div>
 
-        <div className="flex gap-2 items-center">
-          <input type="text" value={filterCountry} onChange={e=>setFilterCountry(e.target.value)} placeholder="País" className="p-2 border rounded" />
-          <input type="text" value={filterState} onChange={e=>setFilterState(e.target.value)} placeholder="Provincia" className="p-2 border rounded" />
-          <input type="text" value={filterCity} onChange={e=>setFilterCity(e.target.value)} placeholder="Ciudad" className="p-2 border rounded" />
-          <input type="text" value={filterNeighborhood} onChange={e=>setFilterNeighborhood(e.target.value)} placeholder="Barrio" className="p-2 border rounded" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <input type="text" value={filterCountry} onChange={e=>setFilterCountry(e.target.value)} placeholder="País" className="p-2 border rounded text-sm md:text-base" />
+          <input type="text" value={filterState} onChange={e=>setFilterState(e.target.value)} placeholder="Provincia" className="p-2 border rounded text-sm md:text-base" />
+          <input type="text" value={filterCity} onChange={e=>setFilterCity(e.target.value)} placeholder="Ciudad" className="p-2 border rounded text-sm md:text-base" />
+          <input type="text" value={filterNeighborhood} onChange={e=>setFilterNeighborhood(e.target.value)} placeholder="Barrio" className="p-2 border rounded text-sm md:text-base" />
         </div>
 
-        <div className="flex gap-2 items-center">
-          <select value={filterPropertyType} onChange={e=>setFilterPropertyType(e.target.value)} className="p-2 border rounded">
+        <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+          <select value={filterPropertyType} onChange={e=>setFilterPropertyType(e.target.value)} className="p-2 border rounded text-sm md:text-base">
             <option value="">Todos los tipos</option>
             {propertyTypes.map(t=> <option key={t.id} value={String(t.id)}>{t.name}</option>)}
           </select>
-          <select value={filterOperationType} onChange={e=>setFilterOperationType(e.target.value)} className="p-2 border rounded">
+          <select value={filterOperationType} onChange={e=>setFilterOperationType(e.target.value)} className="p-2 border rounded text-sm md:text-base">
             <option value="">Todas las operaciones</option>
             {operationTypes.map(t=> <option key={t.id} value={String(t.id)}>{t.name}</option>)}
           </select>
-          <button onClick={()=>{setQ(''); setFilterStatus(''); setFilterMarket(''); setFilterPropertyType(''); setFilterOperationType(''); setFilterCountry(''); setFilterState(''); setFilterCity(''); setFilterNeighborhood(''); }} className="px-3 py-2 border rounded">Limpiar</button>
+          <button onClick={()=>{setQ(''); setFilterStatus(''); setFilterMarket(''); setFilterPropertyType(''); setFilterOperationType(''); setFilterCountry(''); setFilterState(''); setFilterCity(''); setFilterNeighborhood(''); }} className="px-3 py-2 border rounded text-sm md:text-base">Limpiar</button>
         </div>
       </div>
 
@@ -172,27 +169,11 @@ export default function Properties(){
           <>
             <div className="space-y-4">
               {filteredList.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map(p => {
-              let img = p.images && p.images.length > 0 ? p.images[0].image_url : (thumbs[p.id] || null)
-              if (img && !img.startsWith('http') && !img.startsWith('//')){
-                if (!img.startsWith('/')) img = '/' + img
-                const base = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-                img = base.replace(/\/$/, '') + img
-              }
+              const img = getFirstImage(p.images) || thumbs[p.id] || null
 
               const rawStatus = (p.market_status?.name || p.status || '').toString()
               const sLower = rawStatus.toLowerCase()
-              const statusLabel = (()=>{
-                if(p.market_status?.name) return p.market_status.name
-                switch(sLower){
-                  case 'published': return 'Publicado'
-                  case 'draft': return 'Borrador'
-                  case 'paused': return 'En Pausa'
-                  case 'sold': return 'Vendido'
-                  case 'rented': return 'Alquilado'
-                  case 'available': return 'Disponible'
-                  default: return rawStatus || '—'
-                }
-              })()
+              const statusLabel = p.market_status?.name || STATUS_LABELS[sLower] || rawStatus || '—'
               const statusClass = (sLower === 'published' || statusLabel.toLowerCase().includes('venta') || statusLabel.toLowerCase().includes('vendido')) ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
 
               let marketName = null
@@ -216,8 +197,8 @@ export default function Properties(){
               ) : null
 
               return (
-                <div key={p.id} className="flex w-full border rounded overflow-hidden shadow-sm bg-white">
-                  <div className="w-48 h-40 flex-shrink-0 bg-gray-100">
+                <div key={p.id} className="flex flex-col md:flex-row w-full border rounded overflow-hidden shadow-sm bg-white">
+                  <div className="w-full md:w-48 h-48 md:h-40 flex-shrink-0 bg-gray-100">
                     {img ? (
                       <img src={img} alt={p.title || 'Propiedad'} className="w-full h-full object-cover"/>
                     ) : (
@@ -226,33 +207,33 @@ export default function Properties(){
                       </div>
                     )}
                   </div>
-                  <div className="p-4 flex-1 flex flex-col">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2 max-w-xl">
+                  <div className="p-3 md:p-4 flex-1 flex flex-col">
+                    <div className="flex flex-col sm:flex-row items-start justify-between mb-2 gap-2">
+                      <div className="flex flex-wrap items-center gap-2 max-w-xl">
                         <Link to={`/admin/properties/${p.id}`}>
-                          <h3 className="font-semibold text-lg truncate hover:text-blue-600 cursor-pointer transition">{p.title || 'Sin título'}</h3>
+                          <h3 className="font-semibold text-base md:text-lg truncate hover:text-blue-600 cursor-pointer transition">{p.title || 'Sin título'}</h3>
                         </Link>
                         {marketLabel && (
-                          <span className="px-2 py-1 rounded text-sm bg-yellow-100 text-yellow-800">{marketLabel}</span>
+                          <span className="px-2 py-1 rounded text-xs md:text-sm bg-yellow-100 text-yellow-800">{marketLabel}</span>
                         )}
                       </div>
-                      <span className={`px-2 py-1 rounded text-sm ${statusClass}`}>{statusLabel}</span>
+                      <span className={`px-2 py-1 rounded text-xs md:text-sm ${statusClass} whitespace-nowrap`}>{statusLabel}</span>
                     </div>
 
-                    <div className="text-primary font-bold text-xl mb-2">${p.price} {p.currency}</div>
-                    {p.expenses_amount ? (<div className="text-sm text-gray-600 mb-2">Expensas: {p.expenses_amount} {p.expenses_currency || p.currency}</div>) : null}
-                    <div className="text-sm text-gray-600 mb-3">{[p.street, p.street_number, p.city, p.neighborhood].filter(Boolean).join(', ')}</div>
+                    <div className="text-primary font-bold text-lg md:text-xl mb-2">${p.price} {p.currency}</div>
+                    {p.expenses_amount ? (<div className="text-xs md:text-sm text-gray-600 mb-2">Expensas: {p.expenses_amount} {p.expenses_currency || p.currency}</div>) : null}
+                    <div className="text-xs md:text-sm text-gray-600 mb-3 line-clamp-1">{[p.street, p.street_number, p.city, p.neighborhood].filter(Boolean).join(', ')}</div>
 
-                    <div className="flex items-center gap-6 text-sm text-gray-700">
-                      <div className="flex items-center gap-2"><FaRulerCombined className="text-gray-500"/><span>{p.surface_total || '—'} m²</span></div>
-                      <div className="flex items-center gap-2"><FaHome className="text-gray-500"/><span>{p.surface_covered || '—'} m²</span></div>
-                      <div className="flex items-center gap-2"><FaBed className="text-gray-500"/><span>{p.rooms ?? p.ambientes ?? '—'}</span></div>
-                      <div className="flex items-center gap-2"><FaBath className="text-gray-500"/><span>{p.bathrooms ?? '—'}</span></div>
-                      <div className="flex items-center gap-2"><FaCar className="text-gray-500"/><span>{p.garages ?? p.cocheras ?? 0}</span></div>
+                    <div className="grid grid-cols-3 sm:flex sm:items-center gap-3 md:gap-6 text-xs md:text-sm text-gray-700">
+                      <div className="flex items-center gap-1 md:gap-2"><FaRulerCombined className="text-gray-500"/><span>{p.surface_total || '—'} m²</span></div>
+                      <div className="hidden sm:flex items-center gap-1 md:gap-2"><FaHome className="text-gray-500"/><span>{p.surface_covered || '—'} m²</span></div>
+                      <div className="flex items-center gap-1 md:gap-2"><FaBed className="text-gray-500"/><span>{p.rooms ?? p.ambientes ?? '—'}</span></div>
+                      <div className="flex items-center gap-1 md:gap-2"><FaBath className="text-gray-500"/><span>{p.bathrooms ?? '—'}</span></div>
+                      <div className="flex items-center gap-1 md:gap-2"><FaCar className="text-gray-500"/><span>{p.garages ?? p.cocheras ?? 0}</span></div>
                     </div>
 
-                    <div className="mt-auto flex justify-end items-center">
-                      <div className="text-sm text-gray-500">ID: {p.id}</div>
+                    <div className="mt-auto flex justify-end items-center pt-2">
+                      <div className="text-xs md:text-sm text-gray-500">ID: {p.id}</div>
                     </div>
                   </div>
                 </div>
