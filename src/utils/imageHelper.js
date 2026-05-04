@@ -1,54 +1,32 @@
-/**
- * Obtiene la URL completa de una imagen
- * @param {string} imagePath - Ruta relativa de la imagen
- * @returns {string} URL completa de la imagen
- */
-export const getImageUrl = (imagePath) => {
-  if (!imagePath) return null
-  
-  // Si ya es una URL completa, devolverla tal cual
-  if (imagePath.startsWith('http') || imagePath.startsWith('//')) {
-    return imagePath
+const UPLOADS_URL =
+  import.meta.env.VITE_UPLOADS_URL ||
+  'https://permuok.com/back-fernando/public'
+
+export function getImageUrl(url) {
+  if (!url) return null
+
+  if (typeof url !== 'string') return null
+
+  if (url.startsWith('http')) {
+    // Corregir URLs que incluyen /index.php/uploads/ por /uploads/
+    return url.replace('/index.php/uploads/', '/uploads/')
   }
-  
-  // Normalizar la ruta
-  let path = imagePath.replace(/\\/g, '/')
-  if (!path.startsWith('/')) {
-    path = '/' + path
-  }
-  
-  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-  return baseUrl.replace(/\/$/, '') + path
+
+  const cleanPath = url.replace(/^\/+/, '')
+
+  return `${UPLOADS_URL}/${cleanPath}`
 }
 
-/**
- * Obtiene la primera imagen de un array o null
- * @param {Array} images - Array de imágenes
- * @returns {string|null} URL de la primera imagen o null
- */
-export const getFirstImage = (images) => {
-  if (!images || !Array.isArray(images) || images.length === 0) {
-    return null
-  }
-  
-  const firstImage = images[0]
-  const imagePath = firstImage?.image_url || firstImage?.url
-  
-  return getImageUrl(imagePath)
-}
+export function getFirstImage(images) {
+  if (!images || !Array.isArray(images) || images.length === 0) return null
 
-/**
- * Obtiene todas las URLs de imágenes de un array
- * @param {Array} images - Array de imágenes
- * @returns {Array<string>} Array de URLs completas
- */
-export const getImageUrls = (images) => {
-  if (!images || !Array.isArray(images)) {
-    return []
-  }
-  
-  return images
-    .map(img => img?.image_url || img?.url)
-    .filter(Boolean)
-    .map(getImageUrl)
+  const first = images[0]
+
+  const rawUrl =
+    first?.image_url ||
+    first?.url ||
+    first?.path ||
+    first
+
+  return getImageUrl(rawUrl)
 }
